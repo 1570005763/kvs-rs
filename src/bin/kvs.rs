@@ -26,30 +26,30 @@ fn main() {
         )
         .get_matches();
 
-    let mut kv_store : KvStore = KvStore::new();
+    let mut kv_store: KvStore = KvStore::new();
 
     // loop {
-        match matches.subcommand() {
-            Some(("set", sub_matches)) => {
-                // let key: String = sub_matches.get_one::<String>("KEY").unwrap().to_string();
-                // let value : String = sub_matches.get_one::<String>("VALUE").unwrap().to_string();
-                // kv_store.set(key, value);
-                unimplemented!("unimplemented");
-                process::exit(-1);
-            },
-            Some(("get", sub_matches)) => {
-                // let key: String = sub_matches.get_one::<String>("KEY").unwrap().to_string();
-                // kv_store.get(key);
-                unimplemented!("unimplemented");
-                process::exit(-1);
-            },
-            Some(("rm", sub_matches)) => {
-                // let key: String = sub_matches.get_one::<String>("KEY").unwrap().to_string();
-                // kv_store.remove(key);
-                unimplemented!("unimplemented");
-                process::exit(-1);
-            },
-            _ => unreachable!("Exhausted list of subcommands and subcommand_required prevents `None`"),
+    match matches.subcommand() {
+        Some(("set", sub_matches)) => {
+            // let key: String = sub_matches.get_one::<String>("KEY").unwrap().to_string();
+            // let value : String = sub_matches.get_one::<String>("VALUE").unwrap().to_string();
+            // kv_store.set(key, value);
+            unimplemented!("unimplemented");
+            process::exit(-1);
+        }
+        Some(("get", sub_matches)) => {
+            // let key: String = sub_matches.get_one::<String>("KEY").unwrap().to_string();
+            // kv_store.get(key);
+            unimplemented!("unimplemented");
+            process::exit(-1);
+        }
+        Some(("rm", sub_matches)) => {
+            // let key: String = sub_matches.get_one::<String>("KEY").unwrap().to_string();
+            // kv_store.remove(key);
+            unimplemented!("unimplemented");
+            process::exit(-1);
+        }
+        _ => unreachable!("Exhausted list of subcommands and subcommand_required prevents `None`"),
         // }
     }
 }
