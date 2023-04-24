@@ -1,5 +1,6 @@
 use clap::{arg, command, Command};
 use std::process;
+use tempfile::TempDir;
 
 use kvs::KvStore;
 
@@ -26,28 +27,33 @@ fn main() {
         )
         .get_matches();
 
-    let mut kv_store: KvStore = KvStore::new();
-
-    // loop {
     match matches.subcommand() {
         Some(("set", sub_matches)) => {
-            // let key: String = sub_matches.get_one::<String>("KEY").unwrap().to_string();
-            // let value : String = sub_matches.get_one::<String>("VALUE").unwrap().to_string();
-            // kv_store.set(key, value);
-            unimplemented!("unimplemented");
-            process::exit(-1);
+            let mut kv_store = KvStore::open("./").expect("Can not open KvStore.");
+            let key: String = sub_matches.get_one::<String>("KEY").unwrap().to_string();
+            let value : String = sub_matches.get_one::<String>("VALUE").unwrap().to_string();
+            kv_store.set(key, value).expect("Set key error.");
         }
         Some(("get", sub_matches)) => {
-            // let key: String = sub_matches.get_one::<String>("KEY").unwrap().to_string();
-            // kv_store.get(key);
-            unimplemented!("unimplemented");
-            process::exit(-1);
+            let kv_store = KvStore::open("./").expect("Can not open KvStore.");
+            let key: String = sub_matches.get_one::<String>("KEY").unwrap().to_string();
+            let value = kv_store.get(key).expect("Get key error.");
+            match value {
+                None => println!("Key not found"),
+                Some(v) => println!("{}", v),
+            }
         }
         Some(("rm", sub_matches)) => {
-            // let key: String = sub_matches.get_one::<String>("KEY").unwrap().to_string();
-            // kv_store.remove(key);
-            unimplemented!("unimplemented");
-            process::exit(-1);
+            let mut kv_store = KvStore::open("./").expect("Can not open KvStore.");
+            let key: String = sub_matches.get_one::<String>("KEY").unwrap().to_string();
+            let rm_res = kv_store.remove(key);
+            match rm_res {
+                Ok(()) => {},
+                Err(_) => {
+                    println!("Key not found");
+                    panic!("Key not found");
+                },
+            }
         }
         _ => unreachable!("Exhausted list of subcommands and subcommand_required prevents `None`"),
         // }
