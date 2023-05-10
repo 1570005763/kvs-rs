@@ -1,28 +1,12 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
-use serde::{Serialize, Deserialize};
+// use serde::{Serialize, Deserialize};
 use serde_json::Deserializer;
-use std::fs;
-use std::fs::OpenOptions;
-use std::io::Write;
-use std::io::Seek;
-use std::io::SeekFrom;
+use std::fs::{self, OpenOptions};
+use std::io::{Write, Seek, SeekFrom};
 
-use failure::Error;
-use failure::format_err;
-
-/// A type alias for Result that includes your concrete error type, 
-/// so that you don't need to type Result<T, YourErrorType> everywhere, 
-/// but can simply type Result<T>.
-pub type Result<T> = std::result::Result<T, Error>;
-
-/// data structure of KvStore operation for serialization and deserialization
-#[derive(Serialize, Deserialize, Debug)]
-enum Command {
-    Set { key: String, value: String },
-    Get { key: String },
-    Rm { key: String },
-}
+use crate::util::Command;
+use crate::{KvsError, Result, KvsEngine};
 
 /// The `KvStore` stores string key/value pairs.
 ///
@@ -34,6 +18,7 @@ enum Command {
 /// # use kvs::{KvStore, Result};
 /// # fn try_main() -> Result<()> {
 /// use std::env::current_dir;
+/// use kvs::KvsEngine;
 /// let mut store = KvStore::open(current_dir()?)?;
 /// store.set("key".to_owned(), "value".to_owned())?;
 /// let val = store.get("key".to_owned())?;
@@ -48,10 +33,10 @@ pub struct KvStore {
     compact_count: u32,
 }
 
-impl KvStore {
+impl KvsEngine for KvStore {
     /// Set the value of a string key to a string.
     /// Return an error if the value is not written successfully.
-    pub fn set(&mut self, key: String, value: String) -> Result<()> {
+    fn set(&mut self, key: String, value: String) -> Result<()> {
         let cmd = Command::Set { key: key.clone(), value: value.clone() };
         let pos = self.append_to_log(&cmd)?;
 
@@ -68,7 +53,7 @@ impl KvStore {
     /// Get the string value of a string key.
     /// If the key does not exist, return None.
     /// Return an error if the value is not read successfully.
-    pub fn get(&self, key: String) -> Result<Option<String>> {
+    fn get(&mut self, key: String) -> Result<Option<String>> {
         let pos = self.kv_hashmap.get(&key).cloned();
         match pos {
             Some(p) => {
@@ -81,9 +66,9 @@ impl KvStore {
 
     /// Remove a given key.
     /// Return an error if the key does not exist or is not removed successfully.
-    pub fn remove(&mut self, key: String) -> Result<()> {
+    fn remove(&mut self, key: String) -> Result<()> {
         if !self.kv_hashmap.contains_key(&key) {
-            return Err(format_err!("Key not found"));
+            return Err(KvsError::KeyNotFound);
         }
 
         let cmd = Command::Rm { key: key.clone() };
@@ -98,7 +83,9 @@ impl KvStore {
 
         return Ok(());
     }
+}
 
+impl KvStore {
     /// Opens a `KvStore` with the given path.
     ///
     /// This will create a new directory if the given one does not exist.
@@ -131,11 +118,11 @@ impl KvStore {
             let new_pos = stream.byte_offset() as u64;
             // print!("cmd: {:?}", cmd);
             match cmd? {
-                Command::Set { key, value } => {
+                Command::Set { key, .. } => {
                     // println!("Set {{ key = {:?}, value = {:?} }}, pos = {}", key, value, pos);
                     kv_store.kv_hashmap.insert(key, pos);
                 }
-                Command::Get { key } => {
+                Command::Get { .. } => {
                     // println!("Get {{ key = {:?} }}, pos = {}", key, pos);
                     // do nothing
                 }
@@ -213,17 +200,17 @@ impl KvStore {
 
         if let Some(cmd) = stream.next(){
             let value: Option<String> = match cmd? {
-                Command::Set { key, value } => {
+                Command::Set { value, .. } => {
                     // println!("Set {{ key = {:?}, value = {:?} }}, pos = {}", key, value, pos);
                     // kv_store.kv_hashmap.insert(key, pos);
                     Some(value)
                 }
-                Command::Get { key } => {
+                Command::Get { .. } => {
                     // println!("Get {{ key = {:?} }}, pos = {}", key, pos);
                     // do nothing
                     None
                 }
-                Command::Rm { key } => {
+                Command::Rm { .. } => {
                     // println!("Remove {{ key = {:?} }}, pos = {}", key, pos);
                     // kv_store.kv_hashmap.remove(&key);
                     None
@@ -233,6 +220,6 @@ impl KvStore {
             return Ok(value);
         }
 
-        return Err(format_err!("No command found."));
+        return Err(KvsError::UnexpectedCommandType);
     }
 }
