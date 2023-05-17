@@ -1,5 +1,4 @@
 use serde::{Serialize, Deserialize};
-use strum_macros::{Display, EnumString};
 // use std::str::FromStr;
 
 /// data structure of KvStore operation for serialization and deserialization
@@ -39,20 +38,4 @@ pub struct Response {
 
     /// detail infomation for error or value
     pub info: String,
-}
-
-/// defines the storage interface called by KvsServer
-#[derive(Display, Clone, EnumString, PartialEq)]
-pub enum EngineType {
-    /// the built-in engine
-    #[strum(serialize="KVS", serialize="kvs")]
-    KVS,
-
-    /// sled engine
-    #[strum(serialize="SLED", serialize="sled")]
-    SLED,
-
-    /// default engine,
-    #[strum(serialize="DEFAULT", serialize="default")]
-    DEFAULT,
 }

@@ -1,11 +1,10 @@
-use std::path::{PathBuf};
-
+use std::path::PathBuf;
 use sled;
 
 use crate::{KvsError, Result, KvsEngine};
 
 /// implements KvsEngine for the sled storage engine.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SledKvsEngine {
     sled_db: sled::Db,
 }
@@ -13,15 +12,16 @@ pub struct SledKvsEngine {
 impl KvsEngine for SledKvsEngine {
     /// Set the value of a string key to a string.
     /// Return an error if the value is not written successfully.
-    fn set(&mut self, key: String, value: String) -> Result<()> {
+    fn set(&self, key: String, value: String) -> Result<()> {
         self.sled_db.insert(key, value.as_bytes()).unwrap();
+        self.sled_db.flush().unwrap();
         Ok(())
     }
 
     /// Get the string value of a string key.
     /// If the key does not exist, return None.
     /// Return an error if the value is not read successfully.
-    fn get(&mut self, key: String) -> Result<Option<String>> {
+    fn get(&self, key: String) -> Result<Option<String>> {
         let get_result = self.sled_db.get(key).unwrap();
         match get_result {
             Some(iv) => Ok(Some(std::str::from_utf8(iv.as_ref()).unwrap().to_string())),
@@ -31,8 +31,9 @@ impl KvsEngine for SledKvsEngine {
 
     /// Remove a given key.
     /// Return an error if the key does not exist or is not removed successfully.
-    fn remove(&mut self, key: String) -> Result<()> {
+    fn remove(&self, key: String) -> Result<()> {
         let rm_result = self.sled_db.remove(key).unwrap();
+        self.sled_db.flush().unwrap();
         match rm_result {
             Some(_) => Ok(()),
             None => Err(KvsError::KeyNotFound),
