@@ -190,7 +190,7 @@ fn read_rayon_sledkvengine(c: &mut Criterion) {
 }
 
 criterion_group!(benches,
-    // write_queued_kvstore, read_queued_kvstore,
-    // write_rayon_kvstore, read_rayon_kvstore,
+    write_queued_kvstore, read_queued_kvstore,
+    write_rayon_kvstore, read_rayon_kvstore,
     write_rayon_sledkvengine, read_rayon_sledkvengine);
 criterion_main!(benches);
