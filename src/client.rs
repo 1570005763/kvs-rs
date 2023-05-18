@@ -2,8 +2,8 @@ use std::net::{SocketAddr, TcpStream};
 
 // use log::{info, error};
 
-use crate::util::{Command, Response};
 use crate::error::{KvsError, Result};
+use crate::util::{Command, Response};
 
 /// a command-line key-value store client
 pub struct Client {
@@ -33,12 +33,16 @@ impl Client {
             Err(err) => {
                 // failed to parse, return error.
                 return Err(KvsError::Sered(err));
-            },
+            }
         };
 
         match res.res {
-            true => { print!("{}", res.info); },
-            false => { return Err(KvsError::StringError(res.info)); },
+            true => {
+                print!("{}", res.info);
+            }
+            false => {
+                return Err(KvsError::StringError(res.info));
+            }
         }
 
         Ok(())

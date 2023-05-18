@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 // use std::str::FromStr;
 
 /// data structure of KvStore operation for serialization and deserialization
@@ -8,23 +8,23 @@ pub enum Command {
     /// Return an error if the value is not written successfully.
     Set {
         /// key
-        key: String, 
+        key: String,
         /// value
-        value: String 
+        value: String,
     },
 
     /// Get the string value of a string key. If the key does not exist, return None.
     /// Return an error if the value is not read successfully.
-    Get { 
+    Get {
         /// key
-        key: String 
+        key: String,
     },
 
     /// Remove a given string key.
     /// Return an error if the key does not exit or value is not read successfully.
     Rm {
         /// key
-        key: String 
+        key: String,
     },
 }
 
@@ -34,7 +34,7 @@ pub struct Response {
     /// operation result
     /// true for success
     /// false for fail
-    pub res: bool, 
+    pub res: bool,
 
     /// detail infomation for error or value
     pub info: String,

@@ -3,17 +3,17 @@
 
 // pub use kv::KvStore;
 
-pub use engines::{KvsEngine, KvStore, SledKvsEngine};
-pub use util::Command;
+pub use client::Client;
+pub use engines::{KvStore, KvsEngine, SledKvsEngine};
 pub use error::{KvsError, Result};
 pub use server::Server;
-pub use client::Client;
 pub use thread_pool::ThreadPool;
+pub use util::Command;
 
+mod client;
+mod engines;
+mod error;
+mod server;
 /// ?
 pub mod thread_pool;
-mod client;
-mod server;
-mod engines;
 mod util;
-mod error;

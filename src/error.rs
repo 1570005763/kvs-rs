@@ -1,5 +1,5 @@
-use std::io;
 use failure::Fail;
+use std::io;
 
 /// Error type for kvs
 #[derive(Fail, Debug)]
@@ -16,7 +16,7 @@ pub enum KvsError {
     /// Unexpected config error.
     #[fail(display = "Unexpected config")]
     UnexpectedConfig,
-    
+
     /// IO error
     #[fail(display = "IO error: {}", _0)]
     Io(#[cause] io::Error),
@@ -42,7 +42,7 @@ impl From<serde_json::Error> for KvsError {
     }
 }
 
-/// A type alias for Result that includes your concrete error type, 
-/// so that you don't need to type Result<T, YourErrorType> everywhere, 
+/// A type alias for Result that includes your concrete error type,
+/// so that you don't need to type Result<T, YourErrorType> everywhere,
 /// but can simply type Result<T>.
 pub type Result<T> = std::result::Result<T, KvsError>;

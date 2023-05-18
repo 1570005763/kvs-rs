@@ -1,7 +1,6 @@
 use std::path::PathBuf;
-use sled;
 
-use crate::{KvsError, Result, KvsEngine};
+use crate::{KvsEngine, KvsError, Result};
 
 /// implements KvsEngine for the sled storage engine.
 #[derive(Debug, Clone)]

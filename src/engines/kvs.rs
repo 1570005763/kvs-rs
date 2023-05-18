@@ -3,11 +3,11 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 // use serde::{Serialize, Deserialize};
 use serde_json::Deserializer;
-use std::fs::{self, OpenOptions, File};
-use std::io::{Write, Seek, SeekFrom};
+use std::fs::{self, File, OpenOptions};
+use std::io::{Seek, SeekFrom, Write};
 
 use crate::util::Command;
-use crate::{KvsError, Result, KvsEngine};
+use crate::{KvsEngine, KvsError, Result};
 
 const COMPACT_INTERVAL: u32 = 10000;
 
@@ -52,7 +52,10 @@ impl KvsEngine for KvStore {
     /// Set the value of a string key to a string.
     /// Return an error if the value is not written successfully.
     fn set(&self, key: String, value: String) -> Result<()> {
-        let cmd = Command::Set { key: key.clone(), value: value.clone() };
+        let cmd = Command::Set {
+            key: key.clone(),
+            value,
+        };
 
         {
             // Mutex: kv_hashmap
@@ -77,9 +80,9 @@ impl KvsEngine for KvStore {
             match pos {
                 Some(p) => {
                     let value = self.read_from_log(p)?;
-                    return Ok(value);
-                },
-                None => return Ok(None), 
+                    Ok(value)
+                }
+                None => Ok(None),
             }
         }
     }
@@ -88,7 +91,7 @@ impl KvsEngine for KvStore {
     /// Return an error if the key does not exist or is not removed successfully.
     fn remove(&self, key: String) -> Result<()> {
         let cmd = Command::Rm { key: key.clone() };
-        
+
         {
             let mut kv_hashmap = self.kv_hashmap.lock().unwrap();
             if !kv_hashmap.contains_key(&key) {
@@ -100,7 +103,7 @@ impl KvsEngine for KvStore {
 
         self.try_compact_log()?;
 
-        return Ok(());
+        Ok(())
     }
 }
 
@@ -120,10 +123,14 @@ impl KvStore {
             kv_log_path
         };
 
-        let file = OpenOptions::new().read(true).write(true).create(true).open(&kv_log_path)?;
-        
+        let file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .open(&kv_log_path)?;
+
         let kv_store = KvStore {
-            kv_log_path: kv_log_path,
+            kv_log_path,
             kv_hashmap: Arc::new(Mutex::new(HashMap::new())),
             compact_count: Arc::new(Mutex::new(0)),
             file: Arc::new(Mutex::new(Some(file))),
@@ -132,7 +139,7 @@ impl KvStore {
         kv_store.build_hashmap_from_log()?;
         kv_store.try_compact_log()?;
 
-        return Ok(kv_store);
+        Ok(kv_store)
     }
 
     fn build_hashmap_from_log(&self) -> Result<()> {
@@ -156,10 +163,10 @@ impl KvStore {
                         }
                     }
                     pos = new_pos;
-                };
+                }
                 Ok(())
-            },
-            None => return Err(KvsError::StringError("file not initialized".to_string())),
+            }
+            None => Err(KvsError::StringError("file not initialized".to_string())),
         }
     }
 
@@ -189,11 +196,16 @@ impl KvStore {
             let mut kv_backup_hashmap: HashMap<String, u64> = HashMap::new();
             let mut kv_hashmap = self.kv_hashmap.lock().unwrap();
             for (key, pos) in kv_hashmap.iter() {
-                let value = self.read_from_log(pos.clone())?.unwrap();
+                let value = self.read_from_log(*pos)?.unwrap();
                 let backup_pos: u64 = backup_file.stream_position()?;
-                let cmd = Command::Set { key: key.clone(), value: value.clone() };
+                let cmd = Command::Set {
+                    key: key.clone(),
+                    value: value.clone(),
+                };
                 let serialized_operation = serde_json::to_string(&cmd).unwrap();
-                backup_file.write(serialized_operation.as_bytes()).expect("write log.backup.json failed.");
+                backup_file
+                    .write_all(serialized_operation.as_bytes())
+                    .expect("write log.backup.json failed.");
                 kv_backup_hashmap.insert(key.clone(), backup_pos);
             }
 
@@ -201,20 +213,23 @@ impl KvStore {
                 // Mutex: Option<File>
                 let mut file = self.file.lock().unwrap();
                 match &mut *file {
-                    Some(f) => {
-                        drop(f);
-                        *file = None;
-                    },
+                    Some(_) => *file = None,
                     None => return Err(KvsError::StringError("file not initialized".to_string())),
                 }
                 fs::rename(log_backup_path, log_path).expect("rename log.backup.json failed.");
-                *file = Some(OpenOptions::new().read(true).write(true).create(true).open(&self.kv_log_path)?);
+                *file = Some(
+                    OpenOptions::new()
+                        .read(true)
+                        .write(true)
+                        .create(true)
+                        .open(&self.kv_log_path)?,
+                );
             }
-            
+
             *kv_hashmap = kv_backup_hashmap;
         }
 
-        return Ok(());
+        Ok(())
     }
 
     fn append_to_log(&self, cmd: &Command) -> Result<u64> {
@@ -228,10 +243,11 @@ impl KvStore {
                     let pos: u64 = f.stream_position()?;
 
                     // Write to a file
-                    f.write(serialized_operation.as_bytes()).expect("write log.json failed.");
+                    f.write_all(serialized_operation.as_bytes())
+                        .expect("write log.json failed.");
                     Ok(pos)
-                },
-                None => return Err(KvsError::StringError("file not initialized".to_string())),
+                }
+                None => Err(KvsError::StringError("file not initialized".to_string())),
             }
         }
     }
@@ -243,7 +259,7 @@ impl KvStore {
                 Some(f) => {
                     f.seek(SeekFrom::Start(pos))?;
                     let mut stream = Deserializer::from_reader(f).into_iter::<Command>();
-                    if let Some(cmd) = stream.next(){
+                    if let Some(cmd) = stream.next() {
                         let value: Option<String> = match cmd? {
                             Command::Set { value, .. } => Some(value),
                             Command::Get { .. } => None,
@@ -251,10 +267,10 @@ impl KvStore {
                         };
                         return Ok(value);
                     }
-                },
+                }
                 None => return Err(KvsError::StringError("file not initialized".to_string())),
             }
         }
-        return Err(KvsError::UnexpectedCommandType);
+        Err(KvsError::UnexpectedCommandType)
     }
 }

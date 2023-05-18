@@ -10,7 +10,6 @@ pub trait KvsEngine: Clone + Send + 'static {
     /// Return an error if the value is not read successfully.
     fn get(&self, key: String) -> Result<Option<String>>;
 
-
     /// Remove a given string key.
     /// Return an error if the key does not exit or value is not read successfully.
     fn remove(&self, key: String) -> Result<()>;

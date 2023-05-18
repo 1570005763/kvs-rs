@@ -1,10 +1,10 @@
-use std::panic::catch_unwind;
-use std::thread;
 use crossbeam::channel::{self, Sender};
 use log::debug;
+use std::panic::catch_unwind;
+use std::thread;
 
-use crate::ThreadPool;
 use crate::Result;
+use crate::ThreadPool;
 
 /// A thread pool using a shared queue inside.
 ///
@@ -30,19 +30,26 @@ impl ThreadPool for SharedQueueThreadPool {
     /// Spawn a function into the threadpool.
     /// Spawning always succeeds, but if the function panics the threadpool continues to operate with the same number of threads
     /// — the thread count is not reduced nor is the thread pool destroyed, corrupted or invalidated.
-    fn spawn<F>(&self, job: F) where F: FnOnce() + Send + 'static {
-        self.tx.send(Box::new(job)).expect("the thread pool is empty.")
+    fn spawn<F>(&self, job: F)
+    where
+        F: FnOnce() + Send + 'static,
+    {
+        self.tx
+            .send(Box::new(job))
+            .expect("the thread pool is empty.")
     }
 }
 
 fn start_thread(rx: &crossbeam::Receiver<Box<(dyn FnOnce() + Send + 'static)>>) -> Result<()> {
     let rx = rx.clone();
-    thread::Builder::new().spawn(move || {
-        let res = catch_unwind(||run_task(&rx));
-        if res.is_err() {
-            start_thread(&rx).expect("spawn thread failed.");
-        }
-    }).expect("spawn thread failed.");
+    thread::Builder::new()
+        .spawn(move || {
+            let res = catch_unwind(|| run_task(&rx));
+            if res.is_err() {
+                start_thread(&rx).expect("spawn thread failed.");
+            }
+        })
+        .expect("spawn thread failed.");
     Ok(())
 }
 

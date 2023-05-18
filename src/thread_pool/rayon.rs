@@ -1,7 +1,7 @@
 use rayon;
 
-use crate::ThreadPool;
 use crate::Result;
+use crate::ThreadPool;
 /// Wrapper of rayon::ThreadPool
 pub struct RayonThreadPool {
     pool: rayon::ThreadPool,
@@ -15,14 +15,16 @@ impl ThreadPool for RayonThreadPool {
             .num_threads(threads.try_into().unwrap())
             .build()
             .unwrap();
-        Ok(RayonThreadPool{ pool })
+        Ok(RayonThreadPool { pool })
     }
 
     ///Spawn a function into the threadpool.
-    /// Spawning always succeeds, but if the function panics the threadpool continues to operate with the same number of threads 
+    /// Spawning always succeeds, but if the function panics the threadpool continues to operate with the same number of threads
     /// — the thread count is not reduced nor is the thread pool destroyed, corrupted or invalidated.
-    fn spawn<F>(&self, job: F) where F: FnOnce() + Send + 'static {
-        self.pool.install(|| job());
+    fn spawn<F>(&self, job: F)
+    where
+        F: FnOnce() + Send + 'static,
+    {
+        self.pool.install(job);
     }
 }
-

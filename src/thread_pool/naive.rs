@@ -1,7 +1,7 @@
 use std::thread;
 
-use crate::ThreadPool;
 use crate::Result;
+use crate::ThreadPool;
 
 /// It is actually not a thread pool. It spawns a new thread every time
 /// the `spawn` method is called.
@@ -15,10 +15,12 @@ impl ThreadPool for NaiveThreadPool {
     }
 
     ///Spawn a function into the threadpool.
-    /// Spawning always succeeds, but if the function panics the threadpool continues to operate with the same number of threads 
+    /// Spawning always succeeds, but if the function panics the threadpool continues to operate with the same number of threads
     /// — the thread count is not reduced nor is the thread pool destroyed, corrupted or invalidated.
-    fn spawn<F>(&self, job: F) where F: FnOnce() + Send + 'static {
+    fn spawn<F>(&self, job: F)
+    where
+        F: FnOnce() + Send + 'static,
+    {
         thread::spawn(job);
     }
 }
-
